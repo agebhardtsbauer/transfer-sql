@@ -17,11 +17,13 @@ export class SelectQuery {
 
       cursor.execute(query);
       const rows = cursor.fetchall();
+      //@ts-ignore
+      const columnNames = cursor.description.map((desc: any) => desc[0]);
 
       const results: TableRecord<T>[] = [];
 
-      for await (const row of rows) {
-        results.push(this.parseRow(row));
+      for (const row of rows) {
+        results.push(this.parseRow(row, columnNames));
       }
 
       return {
@@ -53,15 +55,16 @@ export class SelectQuery {
     conditions?: Record<string, any>,
     limit?: number,
   ): string {
-    let query = `SELECT * FROM ${tableName}`;
+    let limitString: string = " ";
+    if (limit && limit > 0) {
+      limitString = ` TOP ${limit} `;
+    }
+
+    let query = `SELECT${limitString}* FROM ${tableName}`;
 
     if (conditions && Object.keys(conditions).length > 0) {
       const whereClause = this.buildWhereClause(conditions);
       query += ` WHERE ${whereClause}`;
-    }
-
-    if (limit) {
-      query += ` LIMIT ${limit}`;
     }
 
     return query;
@@ -77,20 +80,31 @@ export class SelectQuery {
       .join(" AND ");
   }
 
-  private parseRow(row: any): any {
-    const parsed: any = {};
+  private parseRow<T extends TableName>(
+    row: any[],
+    columnNames: string[],
+  ): TableRecord<T> {
+    const parsed: Record<string, any> = {};
 
-    for (const [key, value] of Object.entries(row)) {
+    for (let i = 0; i < columnNames.length; i++) {
+      const columnName = columnNames[i];
+      const value = row[i];
+
       if (value === null || value === undefined) {
-        parsed[key] = null;
+        parsed[columnName] = null;
       } else if (value instanceof Date) {
-        parsed[key] = dayjs(value).format("YYYY-MM-DD HH:mm:ss");
+        parsed[columnName] = dayjs(value).format("YYYY-MM-DD HH:mm:ss");
+      } else if (typeof value === "number") {
+        parsed[columnName] = value;
+      } else if (typeof value === "string") {
+        parsed[columnName] = value;
+      } else if (typeof value === "bigint") {
+        parsed[columnName] = Number(value);
       } else {
-        parsed[key] = value;
+        parsed[columnName] = String(value);
       }
     }
 
-    return parsed;
+    return parsed as TableRecord<T>;
   }
 }
-

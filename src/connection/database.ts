@@ -48,8 +48,6 @@ export class DatabaseConnection {
       password: this.config.password,
       database: this.config.database_name,
       logmech: "LDAP",
-      encryptdata: "true",
-      sslmode: "require",
     };
   }
 
