@@ -1,4 +1,5 @@
 export * from './tables';
+export * from './testing';
 
 export type Environment = 'DEV' | 'TEST';
 

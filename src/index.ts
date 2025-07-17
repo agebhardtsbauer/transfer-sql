@@ -33,3 +33,4 @@ export class TeradataClient {
 export * from './types';
 export * from './connection';
 export * from './queries';
+export * from './testing';
